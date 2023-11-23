@@ -2,7 +2,7 @@
 
 name = "custom-price"
 client_id = "0c31a2582b51a56482e9ceb2f794a5dc"
-application_url = "https://citation-driver-surname-widespread.trycloudflare.com"
+application_url = "https://smile-deadly-samba-designing.trycloudflare.com"
 embedded = true
 
 [access_scopes]
@@ -11,10 +11,10 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://citation-driver-surname-widespread.trycloudflare.com/auth/callback",
-  "https://citation-driver-surname-widespread.trycloudflare.com/auth/shopify/callback",
-  "https://citation-driver-surname-widespread.trycloudflare.com/api/auth/callback",
-  "https://citation-driver-surname-widespread.trycloudflare.com/.shopify/graphiql/auth/callback"
+  "https://smile-deadly-samba-designing.trycloudflare.com/auth/callback",
+  "https://smile-deadly-samba-designing.trycloudflare.com/auth/shopify/callback",
+  "https://smile-deadly-samba-designing.trycloudflare.com/api/auth/callback",
+  "https://smile-deadly-samba-designing.trycloudflare.com/.shopify/graphiql/auth/callback"
 ]
 
 [webhooks]
