@@ -40,9 +40,7 @@ export async function loader({ request, params }) {
   }
   const qrCode = await getQRCode(Number(params.id), admin.graphql);
 
-  return json({
-    qrCode,
-  });
+  return json(qrCode);
 }
 
 export async function action({ request, params }) {
@@ -75,7 +73,7 @@ export async function action({ request, params }) {
 export default function QRCodeForm() {
   const errors = useActionData()?.errors || {};
 
-  const { qrCode } = useLoaderData();
+  const qrCode = useLoaderData();
   const [formState, setFormState] = useState(qrCode);
   const [cleanFormState, setCleanFormState] = useState(qrCode);
   const isDirty = JSON.stringify(formState) !== JSON.stringify(cleanFormState);
@@ -124,7 +122,7 @@ export default function QRCodeForm() {
 
   return (
     <Page>
-      <ui-title-bar title={qrCode.id ? "Edit QR code" : "Create new QR code"}>
+      <ui-title-bar title={qrCode?.id ? "Edit QR code" : "Create new QR code"}>
         <button variant="breadcrumb" onClick={() => navigate("/app")}>
           QR codes
         </button>
