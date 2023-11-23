@@ -30,11 +30,10 @@ export async function getQRCodes(shop, graphql) {
 
 export async function getQRCodeImage(id) {
   const url = new URL(`/qrcodes/${id}/scan`, process.env.SHOPIFY_APP_URL);
-	console.log("generated URL",url.href);
   return qrcode.toDataURL(url.href);
 }
 
-export async function getDestinationUrl(qrCode) {
+export function getDestinationUrl(qrCode) {
   if (qrCode.destination === "product") {
     return `https://${qrCode.shop}/products/${qrCode.productHandle}`;
   }
