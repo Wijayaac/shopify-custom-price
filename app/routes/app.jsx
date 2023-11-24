@@ -1,31 +1,44 @@
+import { useState } from "react";
 import { json } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
+import { Provider as AppBridgeReactProvider } from "@shopify/app-bridge-react";
+
 import { authenticate } from "../shopify.server";
+import { DiscountProvider } from "../components/provider/DiscountProvider";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
 
-  return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
+  const url = new URL(request.url);
+  return json({
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    host: url.searchParams.get("host"),
+  });
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData();
+  const { apiKey, host } = useLoaderData();
+  const [config] = useState({ host, apiKey });
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <ui-nav-menu>
-        <Link to="/app" rel="home">
-          Home
-        </Link>
-        <Link to="/app/discount">Discount page</Link>
-        <Link to="/app/additional">Additional page</Link>
-      </ui-nav-menu>
-      <Outlet />
+      <AppBridgeReactProvider config={config}>
+        <DiscountProvider>
+          <ui-nav-menu>
+            <Link to="/app" rel="home">
+              Home
+            </Link>
+            <Link to="/app/discount">Discount page</Link>
+            <Link to="/app/additional">Additional page</Link>
+          </ui-nav-menu>
+          <Outlet />
+        </DiscountProvider>
+      </AppBridgeReactProvider>
     </AppProvider>
   );
 }
