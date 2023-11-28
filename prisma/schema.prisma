@@ -32,3 +32,16 @@ model QRCode {
   scans            Int      @default(0)
   createdAt        DateTime @default(now())
 }
+
+model Discount {
+	id          Int      @id @default(autoincrement())
+	title       String
+	shop        String
+	code        String
+	amount	    Decimal
+	customerTag String
+	isShow  		Boolean  @default(false)
+	createdAt   DateTime @default(now())
+	expiresAt   DateTime
+	productVariantId String
+}

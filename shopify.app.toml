@@ -2,7 +2,7 @@
 
 name = "custom-price"
 client_id = "0c31a2582b51a56482e9ceb2f794a5dc"
-application_url = "https://replaced-editions-consequently-lisa.trycloudflare.com"
+application_url = "https://unix-fever-poultry-transmitted.trycloudflare.com"
 embedded = true
 
 [access_scopes]
@@ -11,10 +11,10 @@ scopes = "write_products,write_discounts"
 
 [auth]
 redirect_urls = [
-  "https://replaced-editions-consequently-lisa.trycloudflare.com/auth/callback",
-  "https://replaced-editions-consequently-lisa.trycloudflare.com/auth/shopify/callback",
-  "https://replaced-editions-consequently-lisa.trycloudflare.com/api/auth/callback",
-  "https://replaced-editions-consequently-lisa.trycloudflare.com/.shopify/graphiql/auth/callback"
+  "https://unix-fever-poultry-transmitted.trycloudflare.com/auth/callback",
+  "https://unix-fever-poultry-transmitted.trycloudflare.com/auth/shopify/callback",
+  "https://unix-fever-poultry-transmitted.trycloudflare.com/api/auth/callback",
+  "https://unix-fever-poultry-transmitted.trycloudflare.com/.shopify/graphiql/auth/callback"
 ]
 
 [webhooks]

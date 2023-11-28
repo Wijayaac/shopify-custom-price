@@ -1,10 +1,13 @@
 import { Card, Layout, Page, Text, BlockStack, Button } from "@shopify/polaris";
-import { authenticate } from "../shopify.server";
 import { useActionData, useSubmit } from "@remix-run/react";
 import { json } from "@remix-run/node";
 
+import { authenticate } from "../shopify.server";
+import db from "../db.server";
+
 export async function action({ request, params }) {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
+  const { shop } = session;
   const formData = await request.formData();
 
   // const {
@@ -28,64 +31,90 @@ export async function action({ request, params }) {
   // TODO : refactor to allow creating discount from user input
   const response = await admin.graphql(
     `#graphql
-			mutation {
-					discountAutomaticBxgyCreate(automaticBxgyDiscount: {
-						title: "BXGY discount test",
-						startsAt: "2022-01-01",
-						endsAt: "2024-04-18T02:38:45Z",
-						usesPerOrderLimit: "1",
-						customerBuys: {
-							value: {
-								# Accepts quantity or amount
-								quantity: "1"
-							}
-							items: {
-								# If you want a customer to get a discount regardless of the item that they
-								# specific product.
-								products: {
-									# Replace this product ID with the ID for a product in your store
-									productsToAdd: ["gid://shopify/Product/8122592461095"]
-								}
-							}
-						},
-						customerGets: {
-							value: {
-								discountOnQuantity: {
-									quantity: "1",
-									effect: {
-										percentage: 1.00
+			mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
+				discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+					codeDiscountNode {
+						codeDiscount {
+							... on DiscountCodeBasic {
+								title
+								codes(first: 10) {
+									nodes {
+										code
 									}
 								}
-							}
-							items: {
-								# If you want to apply the discount to all items, then use
-								products: {
-									# Replace this product ID with the ID for a product in your store
-									productsToAdd: ["gid://shopify/Product/8122592493863"]
+								startsAt
+								endsAt
+								customerSelection {
+									... on DiscountCustomerAll {
+										allCustomers
+									}
 								}
-							}
-						}}) {
-						userErrors {
-							field
-							message
-							code
-						}
-						automaticDiscountNode {
-							id
-							automaticDiscount {
-								... on DiscountAutomaticBxgy {
-									title
-									summary
-									status
+								customerGets {
+									value {
+										... on DiscountPercentage {
+											percentage
+										}
+									}
+									items {
+										... on AllDiscountItems {
+											allItems
+										}
+									}
 								}
+								appliesOncePerCustomer
 							}
 						}
 					}
-				}`
+					userErrors {
+						field
+						code
+						message
+					}
+				}
+				}`,
+    {
+      variables: {
+        basicCodeDiscount: {
+          title: "10% off all items during the summer of 2024",
+          code: "SUMMER10",
+          startsAt: "2022-06-21T00:00:00Z",
+          customerSelection: {
+            customers: {
+              add: ["gid://shopify/Customer/6905513017639"],
+            },
+          },
+          customerGets: {
+            value: {
+              percentage: 0.1,
+            },
+            items: {
+              products: {
+                productsToAdd: ["gid://shopify/Product/8122592428327"],
+              },
+            },
+          },
+          appliesOncePerCustomer: true,
+        },
+      },
+    }
   );
 
   const responseJson = await response.json();
-  const errors = responseJson.data.discountAutomaticBxgyCreate?.userErrors;
+  const errors = responseJson.data.discountCodeBasicCreate?.userErrors;
+
+  // save discount to db
+  const discount = {
+    shop: shop,
+    title: "10% off all items during the summer of 2024",
+    code: "SUMMER10",
+    amount: 0.1,
+    customerTag: "cs_summer_2024",
+    isShow: true,
+    productVariantId: "8122592428327",
+    expiresAt: "2025-06-21T00:00:00Z",
+  };
+
+  await db.discount.create({ data: discount });
 
   return json({ errors }, { status: 422 });
 }
