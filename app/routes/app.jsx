@@ -33,8 +33,9 @@ export default function App() {
             <Link to="/app" rel="home">
               Home
             </Link>
-            <Link to="/app/discount">Discount page</Link>
-            <Link to="/app/additional">Additional page</Link>
+            <Link to="/app/custom-price">Custom Price</Link>
+            <Link to="/app/qrcodes">QR Codes</Link>
+            <Link to="/app/discount">Discount</Link>
           </ui-nav-menu>
           <Outlet />
         </DiscountProvider>
