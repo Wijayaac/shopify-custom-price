@@ -28,18 +28,56 @@ import {
   getCustomPrice,
   validateCustomPrice,
 } from "../models/CustomPrice.server";
+import { CustomerSelector } from "../components/CustomerPicker";
 
 export async function loader({ request, params }) {
   const { admin } = await authenticate.admin(request);
+
+  // get all customers
+  const url = new URL(request.url);
+  const after = url.searchParams.get("after") || null;
+  const searchQuery = url.searchParams.get("searchQuery") || "";
+  const customerResponse = await admin.graphql(
+    `#graphql
+		query GetCustomers($first: Int!, $searchQuery: String = "", $after: String) {
+			customers(first: $first, query: $searchQuery, sortKey: NAME, after: $after) {
+				edges {
+					node {
+						id
+						displayName
+					}
+					cursor
+				}
+				pageInfo {
+					hasNextPage
+				}
+			}
+		}`,
+    {
+      variables: {
+        first: 10,
+        searchQuery: searchQuery,
+        after: after,
+      },
+    }
+  );
+
+  const {
+    data: { customers },
+  } = await customerResponse.json();
+
   if (params.id === "new") {
     return json({
-      title: "",
+      customPrice: {
+        title: "",
+      },
+      customers,
     });
   }
 
   const customPrice = await getCustomPrice(Number(params.id), admin.graphql);
 
-  return json(customPrice);
+  return json({ customPrice, customers });
 }
 
 export async function action({ request, params }) {
@@ -75,12 +113,13 @@ export async function action({ request, params }) {
 
 export default function CustomPriceForm() {
   const errors = useActionData()?.errors || {};
-  const customPrice = useLoaderData();
+  const { customPrice, customers } = useLoaderData();
   const nav = useNavigate();
   const navigate = useNavigation();
   const submit = useSubmit();
   const [formState, setFormState] = useState(customPrice);
   const [cleanFormState, setCleanFormState] = useState(customPrice);
+  const [selectedCustomers, setSelectedCustomers] = useState([]);
 
   const isDirty = JSON.stringify(formState) !== JSON.stringify(cleanFormState);
   const isSaving =
@@ -111,18 +150,19 @@ export default function CustomPriceForm() {
   }
 
   function handleSave() {
+    const customerIds = selectedCustomers.map((customer) => customer.id);
     const data = {
       title: formState.title,
       code: formState.code,
       amount: formState.amount,
-      customer: formState.customer,
+      customer: customerIds,
       isShow: formState.isShow,
       productId: formState.productId || "",
       productVariantId: formState.productVariantId || "",
     };
     setCleanFormState({ ...formState });
     console.log("data", data);
-    submit(data, { method: "post" });
+    // submit(data, { method: "post" });
   }
 
   return (
@@ -151,7 +191,7 @@ export default function CustomPriceForm() {
                   label="title"
                   labelHidden
                   autoComplete="off"
-                  value={formState.title}
+                  value={formState?.title}
                   onChange={(title) => setFormState({ ...formState, title })}
                   error={errors.title}
                 />
@@ -198,17 +238,9 @@ export default function CustomPriceForm() {
                 <Text as="h2" variant="headingLg">
                   Customer
                 </Text>
-                <TextField
-                  id="customer"
-                  helpText="if this is empty, it will apply to all customers"
-                  label="customer"
-                  labelHidden
-                  autoComplete="off"
-                  value={formState.customer}
-                  onChange={(customer) =>
-                    setFormState({ ...formState, customer })
-                  }
-                  error={errors.customer}
+                <CustomerSelector
+                  customers={customers}
+                  setCustomers={setSelectedCustomers}
                 />
               </BlockStack>
             </Card>

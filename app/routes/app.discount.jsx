@@ -20,10 +20,9 @@ import db from "../db.server";
 import { getDiscounts } from "../models/Discount.server";
 
 import { useEffect, useState } from "react";
-import {
-  unstable_Picker as Picker,
-  useNavigate,
-} from "@shopify/app-bridge-react";
+import { unstable_Picker as Picker } from "@shopify/app-bridge-react";
+
+import { CustomerSelector } from "../components/CustomerPicker";
 
 export async function loader({ request }) {
   const discounts = await getDiscounts();
@@ -184,100 +183,14 @@ export async function action({ request, params }) {
 export default function DiscountPage() {
   const submitForm = useSubmit();
   const actionData = useActionData();
-
-  const fetcher = useFetcher();
   const { discounts, customers } = useLoaderData();
 
   function createDiscount() {
     submitForm({ discount: "test" }, { method: "POST" });
   }
 
-  const fetchCustomers = async () => {
-    // submitForm({ customers: "test" }, { method: "POST" });
-    setIsOpen(true);
-  };
-
   // main customer eligibility
   const [selectedCustomers, setSelectedCustomers] = useState([]);
-  // customers selection
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  // customer picker
-  const [selectedItems, setSelectedItems] = useState(selectedCustomers);
-  const [pickerItems, setPickerItems] = useState([]);
-  const [hasNextPage, setHasNextPage] = useState(
-    customers?.pageInfo?.hasNextPage
-  );
-  let customersNode = [];
-  const [dataIsLoading, setDataIsLoading] = useState(false);
-
-  // useeffect to fetch next page
-  useEffect(() => {
-    if (!fetcher.data || fetcher.state === "loading") {
-      return;
-    }
-
-    if (searchQuery !== "" && fetcher.data) {
-      console.log("fetcher search data", fetcher.data);
-      const newItems = fetcher.data.customers.edges.map((customer) => {
-        return {
-          id: customer.node.id,
-          name: `${customer.node.displayName}`,
-        };
-      });
-      setPickerItems(newItems);
-      setHasNextPage(fetcher.data.customers.pageInfo.hasNextPage);
-    } else {
-      console.log("fetcher load data", fetcher.data);
-      const newItems = fetcher.data.customers.edges.map((customer) => {
-        return {
-          id: customer.node.id,
-          name: `${customer.node.displayName}`,
-        };
-      });
-
-      setPickerItems((prev) => [...prev, ...newItems]);
-      setHasNextPage(fetcher.data.customers.pageInfo.hasNextPage);
-    }
-    setDataIsLoading(false);
-  }, [fetcher.data]);
-
-  function fetchNextPage() {
-    // get cursor from the last customers
-    setDataIsLoading(true);
-    const newCursor = fetcher.data
-      ? fetcher.data.customers.edges[fetcher.data.customers.edges.length - 1]
-          .cursor
-      : customers.edges[customers.edges.length - 1].cursor;
-
-    const query = `?discount&after=${newCursor}`;
-    fetcher.load(query);
-  }
-  function handleSearchChange(value) {
-    // if search query is empty, reset picker items
-    if (value === "") {
-      setPickerItems([]);
-    }
-    const query = `?discount&searchQuery=${value}`;
-    fetcher.load(query);
-    setSearchQuery(value);
-  }
-  useEffect(() => {
-    if (customers) {
-      customersNode = customers.edges.map((customer) => {
-        return {
-          id: customer.node.id,
-          name: `${customer.node.displayName}`,
-        };
-      });
-      setPickerItems(customersNode);
-    }
-  }, []);
-
-  useEffect(() => {
-    setSelectedItems(selectedCustomers);
-    console.log("selected customers", selectedCustomers);
-  }, [selectedCustomers]);
 
   return (
     <Page>
@@ -289,45 +202,10 @@ export default function DiscountPage() {
               <Text as="p" variant="bodyMd">
                 Allow customer to get BXGY Discount
               </Text>
-              <Button onClick={fetchCustomers}>Fetch customers</Button>
               <Button onClick={createDiscount}>Create a discount</Button>
-              <Picker
-                searchQueryPlaceholder="Search customers"
-                primaryActionLabel="Select"
-                secondaryActionLabel="Cancel"
-                title="Customer Picker"
-                open={isOpen}
-                items={pickerItems}
-                maxSelectable={0}
-                searchQuery={searchQuery}
-                onCancel={() => {
-                  setIsOpen(false);
-                  setSearchQuery("");
-                }}
-                onSelect={({ selectedItems }) => {
-                  setIsOpen(false);
-                  const newCustomer = selectedItems.map((item) =>
-                    pickerItems.find((node) => node.id === item.id)
-                  );
-                  setSelectedCustomers(newCustomer);
-                  setSearchQuery("");
-                }}
-                onSearch={(options) => {
-                  handleSearchChange(options.searchQuery);
-                }}
-                canLoadMore={hasNextPage}
-                onLoadMore={() => {
-                  if (hasNextPage) {
-                    console.log("load more");
-                    fetchNextPage();
-                  }
-                }}
-                emptySearchLabel={{
-                  title: "No customers found",
-                  description: "Try adjusting your search or filters.",
-                  withIllustration: true,
-                }}
-                loading={dataIsLoading}
+              <CustomerSelector
+                customers={customers}
+                setCustomers={setSelectedCustomers}
               />
             </BlockStack>
           </Card>
