@@ -3,10 +3,16 @@ import { useEffect, useState } from "react";
 import { unstable_Picker as Picker } from "@shopify/app-bridge-react";
 import { Button } from "@shopify/polaris";
 
-export function CustomerSelector({ customers, setCustomers }) {
+export function CustomerSelector({
+  customers,
+  currentCustomers,
+  setCustomers,
+}) {
   const fetcher = useFetcher();
   // main customer eligibility
-  const [selectedCustomers, setSelectedCustomers] = useState([]);
+  const [selectedCustomers, setSelectedCustomers] = useState([
+    currentCustomers,
+  ]);
   // customers selection
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

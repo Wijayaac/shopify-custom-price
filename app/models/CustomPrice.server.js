@@ -1,6 +1,6 @@
 import db from "../db.server";
 
-export async function getCustomPricePublic(id) {
+export async function getCustomPricePublic(productId) {
   const customPrice = await db.customPrice.findFirst({ where: { productId } });
 
   if (!customPrice) {
@@ -25,8 +25,8 @@ export async function getCustomPrices(shop, graphql) {
     where: { shop },
     orderBy: { id: "desc" },
   });
-
   if (customPrices.length === 0) {
+    console.log(customPrices);
     return [];
   }
 
@@ -40,7 +40,8 @@ export async function getCustomPrices(shop, graphql) {
 async function supplementCustomPrice(customPrice, graphql) {
   const response = await graphql(
     `
-      query supplementCustomPrice($id: ID!) {
+      #graphql
+      query supplementCustomPrice($id: ID!, $customerId: ID!) {
         product(id: $id) {
           title
           images(first: 1) {
@@ -50,22 +51,32 @@ async function supplementCustomPrice(customPrice, graphql) {
             }
           }
         }
+        customer(id: $customerId) {
+          name: firstName
+        }
       }
     `,
-    { id: customPrice.productId }
+    {
+      variables: {
+        id: customPrice.productId,
+        customerId: customPrice.customerTag,
+      },
+    }
   );
 
   const {
-    data: { product },
+    data: { product, customer },
   } = await response.json();
 
   return {
     ...customPrice,
+    customerName: customer.name,
     productDeleted: !product?.title,
     productTitle: product?.title,
     productImage: product?.images?.nodes?.[0]?.url,
     productAlt: product?.images?.nodes?.[0]?.altText,
-    image: await customPriceImagePromise,
+    createdAt: customPrice.createdAt.toLocaleDateString("en-GB"),
+    expiresAt: customPrice.expiresAt.toLocaleDateString("en-GB"),
   };
 }
 

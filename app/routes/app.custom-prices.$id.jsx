@@ -1,5 +1,5 @@
 import { json, redirect } from "@remix-run/node";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useActionData,
   useLoaderData,
@@ -71,17 +71,33 @@ export async function loader({ request, params }) {
       customPrice: {
         title: "",
       },
+      customer: {},
       customers,
     });
   }
 
   const customPrice = await getCustomPrice(Number(params.id), admin.graphql);
+  const customerRaw = await admin.graphql(
+    `#graphql
+		query GetCustomer($id: ID!) {
+			customer(id: $id) {
+				id
+				name: displayName
+			}
+		}`,
+    {
+      variables: {
+        id: customPrice.customerTag,
+      },
+    }
+  );
+  const customer = await customerRaw.json();
 
-  return json({ customPrice, customers });
+  return json({ customPrice, customers, customer: customer.data.customer });
 }
 
 export async function action({ request, params }) {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const { shop } = session;
 
   const data = {
@@ -98,24 +114,121 @@ export async function action({ request, params }) {
     return json({ errors }, { status: 422 });
   }
 
-  console.log(data);
+  const {
+    title,
+    code,
+    amount,
+    customers,
+    isShow,
+    productId,
+    productVariantId,
+  } = data;
+
+  // TODO : refactor to allow creating discount from user input
+  const discountInput = await admin.graphql(
+    `#graphql
+  		mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
+  			discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+  				codeDiscountNode {
+  					codeDiscount {
+  						... on DiscountCodeBasic {
+  							title
+  							codes(first: 10) {
+  								nodes {
+  									code
+  								}
+  							}
+  							startsAt
+  							endsAt
+  							customerSelection {
+  								... on DiscountCustomerAll {
+  									allCustomers
+  								}
+  							}
+  							customerGets {
+  								value {
+  									... on DiscountPercentage {
+  										percentage
+  									}
+  								}
+  								items {
+  									... on AllDiscountItems {
+  										allItems
+  									}
+  								}
+  							}
+  							appliesOncePerCustomer
+  						}
+  					}
+  				}
+  				userErrors {
+  					field
+  					code
+  					message
+  				}
+  			}
+  			}`,
+    {
+      variables: {
+        basicCodeDiscount: {
+          title: title,
+          code: code,
+          startsAt: "2022-06-21T00:00:00Z",
+          customerSelection: {
+            customers: {
+              add: [customers],
+            },
+          },
+          customerGets: {
+            appliesOnOneTimePurchase: true,
+            appliesOnSubscription: false,
+            value: {
+              percentage: Number(amount),
+            },
+            items: {
+              products: {
+                productsToAdd: [productId],
+              },
+            },
+          },
+          appliesOncePerCustomer: true,
+        },
+      },
+    }
+  );
+
+  const discountJson = await discountInput.json();
+  const discountErrors = discountJson.data.discountCodeBasicCreate?.userErrors;
+
+  const customPriceData = {
+    shop: shop,
+    title: title,
+    code: code,
+    amount: Number(amount),
+    customerTag: customers,
+    isShow: Boolean(isShow),
+    productId: productId,
+    productVariantId: productVariantId,
+    expiresAt: "2025-06-21T00:00:00Z",
+  };
 
   // const customPrice =
   //   params.id === "new"
-  //     ? await db.customPrice.create({ data })
-  //     : await db.customPrice.update({ where: { id: Number(params.id) }, data });
-
+  //     ? await db.customPrice.create({ customPriceData })
+  //     : await db.customPrice.update({
+  //         where: { id: Number(params.id) },
+  //         customPriceData,
+  //       });
+  await db.customPrice.create({ data: customPriceData });
   // return json({ data });
 
-  return redirect(`/app/custom-prices/new`);
-  // return redirect(`/app/custom-prices/${customPrice.id}`);
+  return json({ discountErrors }, { status: 422 });
 }
 
 export default function CustomPriceForm() {
   const errors = useActionData()?.errors || {};
-  const { customPrice, customers } = useLoaderData();
+  const { customPrice, customers, customer } = useLoaderData();
   const nav = useNavigate();
-  const navigate = useNavigation();
   const submit = useSubmit();
   const [formState, setFormState] = useState(customPrice);
   const [cleanFormState, setCleanFormState] = useState(customPrice);
@@ -151,18 +264,19 @@ export default function CustomPriceForm() {
 
   function handleSave() {
     const customerIds = selectedCustomers.map((customer) => customer.id);
+    const productIds = formState.productId ? [formState.productId] : [];
     const data = {
       title: formState.title,
       code: formState.code,
-      amount: formState.amount,
-      customer: customerIds,
+      amount: formState.amount / 100,
+      customers: customerIds,
       isShow: formState.isShow,
-      productId: formState.productId || "",
+      productId: productIds || "",
       productVariantId: formState.productVariantId || "",
     };
     setCleanFormState({ ...formState });
     console.log("data", data);
-    // submit(data, { method: "post" });
+    submit(data, { method: "post" });
   }
 
   return (
@@ -170,10 +284,7 @@ export default function CustomPriceForm() {
       <ui-title-bar
         title={customPrice?.id ? `Edit ${customPrice.title}` : "New"}
       >
-        <button
-          variant="breadcrumb"
-          onClick={() => navigate("/app/custom-price")}
-        >
+        <button variant="breadcrumb" onClick={() => nav("/app/custom-price")}>
           Custom Prices
         </button>
       </ui-title-bar>
@@ -240,6 +351,7 @@ export default function CustomPriceForm() {
                 </Text>
                 <CustomerSelector
                   customers={customers}
+                  currentCustomers={customer}
                   setCustomers={setSelectedCustomers}
                 />
               </BlockStack>
