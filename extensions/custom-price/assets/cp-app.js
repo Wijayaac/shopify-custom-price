@@ -37,7 +37,7 @@ async function fetchProductDiscount() {
     .getAttribute("data-product-id");
   // todo: change baseURL to absolute live or staging url
   const baseURL =
-    "https://supplied-nursery-indirect-characterization.trycloudflare.com/custom-price/";
+    "https://pixels-template-kingston-democratic.trycloudflare.com/custom-price/";
   try {
     const response = await fetch(`${baseURL}/${productId}`);
     const responseJson = await response.json();
