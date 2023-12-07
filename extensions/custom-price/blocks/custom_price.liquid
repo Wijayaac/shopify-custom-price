@@ -1,0 +1,14 @@
+<div
+  data-product-id="{{ block.settings.product.id }}"
+  class="cp-app-product"
+  data-current-price="{{ block.settings.product.price | money_without_trailing_zeros }}"
+></div>
+<script src="{{ 'cp-app.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Custom Price",
+  "target": "section",
+  "settings": [{ "type": "product", "id": "product", "label": "product", "autofill": true }]
+}
+{% endschema %}

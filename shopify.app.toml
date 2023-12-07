@@ -2,7 +2,7 @@
 
 name = "Think11 App"
 client_id = "0c31a2582b51a56482e9ceb2f794a5dc"
-application_url = "https://te-carey-programmer-consisting.trycloudflare.com"
+application_url = "https://supplied-nursery-indirect-characterization.trycloudflare.com"
 embedded = true
 
 [access_scopes]
@@ -11,10 +11,10 @@ scopes = "write_products,write_discounts,read_customers,write_customers"
 
 [auth]
 redirect_urls = [
-  "https://te-carey-programmer-consisting.trycloudflare.com/auth/callback",
-  "https://te-carey-programmer-consisting.trycloudflare.com/auth/shopify/callback",
-  "https://te-carey-programmer-consisting.trycloudflare.com/api/auth/callback",
-  "https://te-carey-programmer-consisting.trycloudflare.com/.shopify/graphiql/auth/callback"
+  "https://supplied-nursery-indirect-characterization.trycloudflare.com/auth/callback",
+  "https://supplied-nursery-indirect-characterization.trycloudflare.com/auth/shopify/callback",
+  "https://supplied-nursery-indirect-characterization.trycloudflare.com/api/auth/callback",
+  "https://supplied-nursery-indirect-characterization.trycloudflare.com/.shopify/graphiql/auth/callback"
 ]
 
 [webhooks]
