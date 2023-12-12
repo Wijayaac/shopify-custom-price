@@ -30,6 +30,7 @@ import {
 } from "../models/CustomPrice.server";
 import { CustomerSelector } from "../components/CustomerPicker";
 
+// TODO: fix error on load this page
 export async function loader({ request, params }) {
   const { admin } = await authenticate.admin(request);
 
@@ -96,6 +97,7 @@ export async function loader({ request, params }) {
   return json({ customPrice, customers, customer: customer.data.customer });
 }
 
+// TODO add redirection if the custom price successfully created
 export async function action({ request, params }) {
   const { admin, session } = await authenticate.admin(request);
   const { shop } = session;
@@ -212,17 +214,15 @@ export async function action({ request, params }) {
     expiresAt: "2025-06-21T00:00:00Z",
   };
 
-  // const customPrice =
-  //   params.id === "new"
-  //     ? await db.customPrice.create({ customPriceData })
-  //     : await db.customPrice.update({
-  //         where: { id: Number(params.id) },
-  //         customPriceData,
-  //       });
-  await db.customPrice.create({ data: customPriceData });
-  // return json({ data });
+  const customPrice =
+    params.id === "new"
+      ? await db.customPrice.create({ data: customPriceData })
+      : await db.customPrice.update({
+          where: { id: Number(params.id) },
+          data: customPriceData,
+        });
 
-  return json({ discountErrors }, { status: 422 });
+  return redirect(`/app/custom-prices/${customPrice.id}`);
 }
 
 export default function CustomPriceForm() {

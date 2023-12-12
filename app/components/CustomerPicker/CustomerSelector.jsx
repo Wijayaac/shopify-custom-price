@@ -129,8 +129,8 @@ export function CustomerSelector({
         }}
         loading={dataIsLoading}
       />
-      {selectedCustomers.map((customer) => (
-        <p key={customer.id}>{customer.name}</p>
+      {selectedCustomers.map((customer, idx) => (
+        <p key={customer.id + idx}>{customer.name}</p>
       ))}
     </>
   );

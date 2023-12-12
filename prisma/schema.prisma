@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "mysql"
+  url      = "mysql://wijaya:4569@localhost:3306/db_custom_price?connection_limit=5"
 }
 
 model Session {

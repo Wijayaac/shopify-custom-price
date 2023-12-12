@@ -28,17 +28,17 @@ export default function App() {
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <AppBridgeReactProvider config={config}>
-        <DiscountProvider>
-          <ui-nav-menu>
-            <Link to="/app" rel="home">
-              Home
-            </Link>
-            <Link to="/app/custom-price">Custom Price</Link>
-            <Link to="/app/qrcodes">QR Codes</Link>
-            <Link to="/app/discount">Discount</Link>
-          </ui-nav-menu>
-          <Outlet />
-        </DiscountProvider>
+        {/* <DiscountProvider> */}
+        <ui-nav-menu>
+          <Link to="/app" rel="home">
+            Home
+          </Link>
+          <Link to="/app/custom-price">Custom Price</Link>
+          <Link to="/app/qrcodes">QR Codes</Link>
+          <Link to="/app/discount">Discount</Link>
+        </ui-nav-menu>
+        <Outlet />
+        {/* </DiscountProvider> */}
       </AppBridgeReactProvider>
     </AppProvider>
   );
