@@ -17,7 +17,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
 // Add event listener to toggle the popup on click
 const closeButton = document.querySelector(".t11-popup-close button");
-const overlay = document.querySelector(".t11-overlay");
+const ctaButton = document.querySelector(".t11-cta");
+const overlay = document.querySelector(".t11-popup-overlay");
 
 // Function to close the popup
 function closePopup() {
@@ -37,4 +38,5 @@ function closePopup() {
 
 // Add event listener to toggle the popup on click
 closeButton.addEventListener("click", closePopup);
+ctaButton.addEventListener("click", closePopup);
 overlay.addEventListener("click", closePopup);

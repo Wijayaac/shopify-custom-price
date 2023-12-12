@@ -36,8 +36,7 @@ async function fetchProductDiscount() {
     .querySelector("[data-product-id]")
     .getAttribute("data-product-id");
   // todo: change baseURL to absolute live or staging url
-  const baseURL =
-    "https://pixels-template-kingston-democratic.trycloudflare.com/custom-price/";
+  const baseURL = "https://custom-price.fly.dev/custom-price";
   try {
     const response = await fetch(`${baseURL}/${productId}`);
     const responseJson = await response.json();

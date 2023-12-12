@@ -35,7 +35,7 @@
       {% endif %}
       {% if block.settings.button_label != blank and block.settings.button_link != blank %}
         <div class="t11-popup-button">
-          {{ block.settings.button_label | link_to: block.settings.button_link }}
+          {{ block.settings.button_label | link_to: block.settings.button_link, class: 't11-cta' }}
         </div>
       {% endif %}
     </div>

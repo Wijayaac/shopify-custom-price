@@ -1,0 +1,30 @@
+# fly.toml app configuration file generated for custom-price on 2023-12-12T08:56:37+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "custom-price"
+primary_region = "sin"
+
+[build]
+
+[[env]]
+	PORT = "8081"
+	SHOPIFY_APP_URL = "https://custom-price.fly.dev/"
+	SHOPIFY_API_KEY = "0c31a2582b51a56482e9ceb2f794a5dc"
+	SCOPES = "write_products,write_discounts,read_customers,write_customers"
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+
