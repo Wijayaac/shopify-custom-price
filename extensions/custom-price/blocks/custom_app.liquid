@@ -14,7 +14,7 @@
         {{
           block.settings.background_image
           | image_url: width: 480
-          | image_tag: sizes: sizes, widths: '50, 75, 100, 150, 200, 300, 400, 500'
+          | image_tag: widths: '50, 75, 100, 150, 200, 300, 400, 500', height: nil
         }}
       {% else %}
         {{ 'detailed-apparel-1' | placeholder_svg_tag: 'placeholder-svg' }}
