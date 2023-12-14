@@ -65,8 +65,6 @@ const CustomPriceTableRow = ({ customPrice }) => {
     createdAt,
     expiresAt,
   } = customPrice;
-  const formattedCreatedDate = createdAt ? new Date(createdAt) : null;
-  const formattedExpiresDate = expiresAt ? new Date(expiresAt) : null;
 
   return (
     <IndexTable.Row
@@ -76,7 +74,9 @@ const CustomPriceTableRow = ({ customPrice }) => {
       accessibilityLabel={`View details for ${title}`}
     >
       <IndexTable.Cell>
-        <Link to={`/custom-prices/${customPrice.id}`}>{truncate(title)}</Link>
+        <Link to={`/app/custom-prices/${customPrice.id}`}>
+          {truncate(title)}
+        </Link>
       </IndexTable.Cell>
       <IndexTable.Cell>{customerName}</IndexTable.Cell>
       <IndexTable.Cell>{productTitle}</IndexTable.Cell>

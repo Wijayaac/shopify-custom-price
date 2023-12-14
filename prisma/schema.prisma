@@ -47,15 +47,29 @@ model Discount {
 }
 
 model CustomPrice {
-	id          			Int      @id @default(autoincrement())
-	title       			String
+  id                Int       @id @default(autoincrement())
 	shop        			String
-	code        			String
-	amount	    			Decimal
-	productId       	String
-	productVariantId 	String
-	customerTag 			String
-	isShow  					Boolean  @default(false)
-	createdAt   			DateTime @default(now())
-	expiresAt   			DateTime
+  title             String
+  code              String
+  amount            Decimal
+  isShow            Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  expiresAt         DateTime?
+  products          Product[]
+  customers         Customer[]
+}
+
+model Product {
+  id                String    @id @default(uuid())
+	productGid				String
+	variantGid				String
+  customPrice	      CustomPrice @relation(fields: [customPriceId], references: [id])
+	customPriceId     Int
+}
+
+model Customer {
+  id                String    @id @default(uuid())
+	customerGid				String
+  customPrice	      CustomPrice @relation(fields: [customPriceId], references: [id])
+	customPriceId     Int
 }

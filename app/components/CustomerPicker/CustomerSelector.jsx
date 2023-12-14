@@ -90,7 +90,7 @@ export function CustomerSelector({
 
   return (
     <>
-      <Button onClick={fetchCustomers}>Fetch customer</Button>
+      <Button onClick={fetchCustomers}>Select customer</Button>
       <Picker
         searchQueryPlaceholder="Search customers"
         primaryActionLabel="Select"

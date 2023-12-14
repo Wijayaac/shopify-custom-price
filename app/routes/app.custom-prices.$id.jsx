@@ -13,6 +13,7 @@ import {
   Card,
   Checkbox,
   InlineError,
+  InlineGrid,
   InlineStack,
   Layout,
   Page,
@@ -30,7 +31,6 @@ import {
 } from "../models/CustomPrice.server";
 import { CustomerSelector } from "../components/CustomerPicker";
 
-// TODO: fix error on load this page
 export async function loader({ request, params }) {
   const { admin } = await authenticate.admin(request);
 
@@ -78,6 +78,7 @@ export async function loader({ request, params }) {
   }
 
   const customPrice = await getCustomPrice(Number(params.id), admin.graphql);
+  customPrice.amount = customPrice.amount * 100;
   const customerRaw = await admin.graphql(
     `#graphql
 		query GetCustomer($id: ID!) {
@@ -97,16 +98,20 @@ export async function loader({ request, params }) {
   return json({ customPrice, customers, customer: customer.data.customer });
 }
 
-// TODO add redirection if the custom price successfully created
+// TODO: add mutation for adding tag to product
+// so the toggle price can work
 export async function action({ request, params }) {
   const { admin, session } = await authenticate.admin(request);
   const { shop } = session;
 
+  const formData = await request.formData();
+  console.log(formData.entries());
   const data = {
-    ...Object.fromEntries(await request.formData()),
+    ...Object.fromEntries(formData.entries()),
     shop,
   };
 
+  // TODO: add delete mutation
   if (data.action === "delete") {
     await db.customPrice.delete({ where: { id: Number(params.id) } });
     return redirect("/app/custom-price");
@@ -116,17 +121,19 @@ export async function action({ request, params }) {
     return json({ errors }, { status: 422 });
   }
 
-  const {
-    title,
-    code,
-    amount,
-    customers,
-    isShow,
-    productId,
-    productVariantId,
-  } = data;
+  const { title, code, amount, customers, isShow, products } = data;
 
-  // TODO : refactor to allow creating discount from user input
+  const customersGids = JSON.parse(customers).map((customer) => ({
+    customerGid: customer.id,
+  }));
+
+  const productsGids = JSON.parse(products).map(
+    (product) => product.productGid
+  );
+
+  console.log(productsGids);
+
+  // TODO : update mutation to handle update discount
   const discountInput = await admin.graphql(
     `#graphql
   		mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
@@ -178,7 +185,7 @@ export async function action({ request, params }) {
           startsAt: "2022-06-21T00:00:00Z",
           customerSelection: {
             customers: {
-              add: [customers],
+              add: customersGids.map((customer) => customer.customerGid),
             },
           },
           customerGets: {
@@ -189,7 +196,7 @@ export async function action({ request, params }) {
             },
             items: {
               products: {
-                productsToAdd: [productId],
+                productsToAdd: productsGids,
               },
             },
           },
@@ -202,16 +209,22 @@ export async function action({ request, params }) {
   const discountJson = await discountInput.json();
   const discountErrors = discountJson.data.discountCodeBasicCreate?.userErrors;
 
+  if (discountErrors) {
+    return json({ discountErrors }, { status: 422 });
+  }
+
   const customPriceData = {
-    shop: shop,
-    title: title,
-    code: code,
+    title,
+    code,
     amount: Number(amount),
-    customerTag: customers,
     isShow: Boolean(isShow),
-    productId: productId,
-    productVariantId: productVariantId,
-    expiresAt: "2025-06-21T00:00:00Z",
+    shop,
+    customers: {
+      create: customersGids,
+    },
+    products: {
+      create: JSON.parse(rawProducts),
+    },
   };
 
   const customPrice =
@@ -240,43 +253,59 @@ export default function CustomPriceForm() {
   const isDeleting =
     nav.state === "submitting" && nav.formData?.get("action") === "delete";
 
+  // TODO: add ability to select multiple products
   async function selectProduct() {
     const products = await window.shopify.resourcePicker({
       type: "product",
       action: "select",
-      multiple: false,
+      multiple: true,
     });
 
     if (products && products.length > 0) {
-      const { images, id, variants, title, handle } = products[0];
+      const selectedProducts = products.map((product) => {
+        const { images, id, variants, title, handle } = product;
+        return {
+          productId: id,
+          productTitle: title,
+          productVariantId: variants[0]?.id,
+          productHandle: handle,
+          productAlt: images[0]?.altText,
+          productImage: images[0]?.originalSrc,
+        };
+      });
       setFormState({
         ...formState,
-        productId: id,
-        productTitle: title,
-        productVariantId: variants[0]?.id,
-        productTitle: title,
-        productHandle: handle,
-        productAlt: images[0]?.altText,
-        productImage: images[0]?.originalSrc,
+        selectedProducts: selectedProducts,
       });
     }
   }
 
   function handleSave() {
-    const customerIds = selectedCustomers.map((customer) => customer.id);
-    const productIds = formState.productId ? [formState.productId] : [];
+    const productsRaw = formState.selectedProducts.map((product) => ({
+      productGid: product.productId,
+      variantGid: product.productVariantId,
+    }));
     const data = {
       title: formState.title,
       code: formState.code,
       amount: formState.amount / 100,
-      customers: customerIds,
-      isShow: formState.isShow,
-      productId: productIds || "",
-      productVariantId: formState.productVariantId || "",
+      customers: JSON.stringify(selectedCustomers),
+      isShow: formState.isShow || false,
+      products: JSON.stringify(productsRaw),
     };
     setCleanFormState({ ...formState });
-    console.log("data", data);
+    console.log(data, "data");
     submit(data, { method: "post" });
+  }
+
+  function generateRandomDiscountCode() {
+    const length = 8;
+    const chars =
+      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let result = "";
+    for (let i = length; i > 0; --i)
+      result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
   }
 
   return (
@@ -309,17 +338,30 @@ export default function CustomPriceForm() {
                 <Text as="h2" variant="headingLg">
                   Code
                 </Text>
-                {/* TODO: add generate button for generating unique code */}
-                <TextField
-                  id="code"
-                  helpText="Unique Code for the Custom Price"
-                  label="code"
-                  labelHidden
-                  autoComplete="off"
-                  value={formState.code}
-                  onChange={(code) => setFormState({ ...formState, code })}
-                  error={errors.code}
-                />
+                <Text as="span" variant="bodySm">
+                  Please use a unique code for the Custom Price
+                </Text>
+                <InlineGrid columns={["twoThirds", "oneThird"]} gap={400}>
+                  <TextField
+                    id="code"
+                    label="code"
+                    labelHidden
+                    autoComplete="off"
+                    value={formState.code}
+                    onChange={(code) => setFormState({ ...formState, code })}
+                    error={errors.code}
+                  />
+                  <Button
+                    onClick={() =>
+                      setFormState({
+                        ...formState,
+                        code: generateRandomDiscountCode(),
+                      })
+                    }
+                  >
+                    Generate Code
+                  </Button>
+                </InlineGrid>
                 <Text as="h2" variant="headingLg">
                   Amount (in percentage)
                 </Text>

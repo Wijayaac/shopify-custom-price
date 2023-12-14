@@ -26,7 +26,6 @@ export async function getCustomPrices(shop, graphql) {
     orderBy: { id: "desc" },
   });
   if (customPrices.length === 0) {
-    console.log(customPrices);
     return [];
   }
 
@@ -86,11 +85,11 @@ export function validateCustomPrice(data) {
   if (!data.title) {
     errors.title = "Title is required";
   }
-  if (!data.productId) {
-    errors.productId = "Product is required";
-  }
   if (!data.amount) {
-    errors.amount = "Destination is required";
+    errors.amount = "Amount is required";
+  }
+  if (!data.code) {
+    errors.code = "Discount code is required";
   }
   if (Object.keys(errors).length > 0) {
     return errors;

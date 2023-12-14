@@ -35,7 +35,6 @@ export default function App() {
           </Link>
           <Link to="/app/custom-price">Custom Price</Link>
           <Link to="/app/qrcodes">QR Codes</Link>
-          <Link to="/app/discount">Discount</Link>
         </ui-nav-menu>
         <Outlet />
         {/* </DiscountProvider> */}

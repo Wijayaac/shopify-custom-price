@@ -55,8 +55,6 @@ export const action = async ({ params, request }) => {
     configuration,
   } = JSON.parse(formData.get("discount"));
 
-  console.log(formData);
-
   const baseDiscount = {
     functionId,
     title,
