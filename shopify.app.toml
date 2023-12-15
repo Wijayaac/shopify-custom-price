@@ -2,7 +2,7 @@
 
 name = "Think11 App"
 client_id = "0c31a2582b51a56482e9ceb2f794a5dc"
-application_url = "https://highway-destiny-remark-gba.trycloudflare.com"
+application_url = "https://alabama-described-gap-testimonials.trycloudflare.com"
 embedded = true
 
 [access_scopes]
@@ -11,10 +11,10 @@ scopes = "write_products,write_discounts,read_customers,write_customers"
 
 [auth]
 redirect_urls = [
-  "https://highway-destiny-remark-gba.trycloudflare.com/auth/callback",
-  "https://highway-destiny-remark-gba.trycloudflare.com/auth/shopify/callback",
-  "https://highway-destiny-remark-gba.trycloudflare.com/api/auth/callback",
-  "https://highway-destiny-remark-gba.trycloudflare.com/.shopify/graphiql/auth/callback"
+  "https://alabama-described-gap-testimonials.trycloudflare.com/auth/callback",
+  "https://alabama-described-gap-testimonials.trycloudflare.com/auth/shopify/callback",
+  "https://alabama-described-gap-testimonials.trycloudflare.com/api/auth/callback",
+  "https://alabama-described-gap-testimonials.trycloudflare.com/.shopify/graphiql/auth/callback"
 ]
 
 [webhooks]

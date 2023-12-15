@@ -1,10 +1,11 @@
 // TODO:  Create new route only for editing a single custom price / create a new one
 import { json, redirect } from "@remix-run/node";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useActionData,
   useLoaderData,
   useNavigate,
+  useNavigation,
   useSubmit,
 } from "@remix-run/react";
 import {
@@ -30,6 +31,7 @@ import {
   validateCustomPrice,
 } from "../models/CustomPrice.server";
 import { CustomerSelector } from "../components/CustomerPicker";
+import { generateRandomDiscountCode } from "../utils";
 
 export async function loader({ request, params }) {
   const { admin } = await authenticate.admin(request);
@@ -67,26 +69,37 @@ export async function loader({ request, params }) {
     data: { customers },
   } = await customerResponse.json();
 
-  const customPrice = await getCustomPrice(Number(params.id), admin.graphql);
-  customPrice.amount = customPrice.amount * 100;
-  console.log(customPrice, "customPrice");
-  // const customerRaw = await admin.graphql(
-  //   `#graphql
-  // 	query GetCustomer($id: ID!) {
-  // 		customer(id: $id) {
-  // 			id
-  // 			name: displayName
-  // 		}
-  // 	}`,
-  //   {
-  //     variables: {
-  //       id: customPrice.customerTag,
-  //     },
-  //   }
-  // );
-  // const customer = await customerRaw.json();
-  return json({ test: "hello" });
-  return json({ customPrice, customers, customer: customer.data.customer });
+  return json({
+    customPrice: {
+      title: "",
+    },
+    customer: {},
+    customers,
+  });
+}
+
+async function addTags(resource, graphql) {
+  const response = await graphql(
+    `
+      #graphql
+      mutation TagsAdd($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        id: resource.id,
+        tags: resource.tags,
+      },
+    }
+  );
+
+  return response;
 }
 
 // TODO: add mutation for adding tag to product
@@ -102,11 +115,6 @@ export async function action({ request, params }) {
     shop,
   };
 
-  // TODO: add delete mutation
-  if (data.action === "delete") {
-    await db.customPrice.delete({ where: { id: Number(params.id) } });
-    return redirect("/app/custom-price");
-  }
   const errors = validateCustomPrice(data);
   if (errors) {
     return json({ errors }, { status: 422 });
@@ -114,15 +122,12 @@ export async function action({ request, params }) {
 
   const { title, code, amount, customers, isShow, products } = data;
 
-  const customersGids = JSON.parse(customers).map((customer) => ({
+  const customersGid = JSON.parse(customers).map((customer) => ({
     customerGid: customer.id,
   }));
 
-  const productsGids = JSON.parse(products).map(
-    (product) => product.productGid
-  );
-
-  // TODO : update mutation to handle update discount
+  const productsGid = JSON.parse(products).map((product) => product.productGid);
+  // Also add hide_price tag to products if the isShow is false
   const discountInput = await admin.graphql(
     `#graphql
   		mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
@@ -165,7 +170,7 @@ export async function action({ request, params }) {
   					message
   				}
   			}
-  			}`,
+  		}`,
     {
       variables: {
         basicCodeDiscount: {
@@ -174,7 +179,7 @@ export async function action({ request, params }) {
           startsAt: "2022-06-21T00:00:00Z",
           customerSelection: {
             customers: {
-              add: customersGids.map((customer) => customer.customerGid),
+              add: customersGid.map((customer) => customer.customerGid),
             },
           },
           customerGets: {
@@ -185,7 +190,7 @@ export async function action({ request, params }) {
             },
             items: {
               products: {
-                productsToAdd: productsGids,
+                productsToAdd: productsGid,
               },
             },
           },
@@ -198,9 +203,27 @@ export async function action({ request, params }) {
   const discountJson = await discountInput.json();
   const discountErrors = discountJson.data.discountCodeBasicCreate?.userErrors;
 
-  if (discountErrors) {
+  if (discountErrors.length > 0) {
     return json({ discountErrors }, { status: 422 });
   }
+
+  //TODO: add the discount code into customers and products tags
+  const resources = [
+    ...customersGid.map((customer) => ({
+      id: customer.customerGid,
+      tags: [code],
+    })),
+    ...productsGid.map((product) => ({
+      id: product,
+      tags: [code, isShow ? "show_price" : "hide_price"],
+    })),
+  ];
+
+  Promise.all(
+    resources.map((resource) => {
+      addTags(resource, admin.graphql);
+    })
+  );
 
   const customPriceData = {
     title,
@@ -209,20 +232,14 @@ export async function action({ request, params }) {
     isShow: Boolean(isShow),
     shop,
     customers: {
-      create: customersGids,
+      create: customersGid,
     },
     products: {
       create: JSON.parse(products),
     },
   };
 
-  const customPrice =
-    params.id === "new"
-      ? await db.customPrice.create({ data: customPriceData })
-      : await db.customPrice.update({
-          where: { id: Number(params.id) },
-          data: customPriceData,
-        });
+  const customPrice = await db.customPrice.create({ data: customPriceData });
 
   return redirect(`/app/custom-prices/${customPrice.id}`);
 }
@@ -287,21 +304,9 @@ export default function CustomPriceForm() {
     submit(data, { method: "post" });
   }
 
-  function generateRandomDiscountCode() {
-    const length = 8;
-    const chars =
-      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let result = "";
-    for (let i = length; i > 0; --i)
-      result += chars[Math.floor(Math.random() * chars.length)];
-    return result;
-  }
-
   return (
     <Page>
-      <ui-title-bar
-        title={customPrice?.id ? `Edit ${customPrice.title}` : "New"}
-      >
+      <ui-title-bar title="New">
         <button variant="breadcrumb" onClick={() => nav("/app/custom-price")}>
           Custom Prices
         </button>
@@ -428,7 +433,7 @@ export default function CustomPriceForm() {
                 <Checkbox
                   id="isShow"
                   helpText="Option to hide the product price for all visitors"
-                  label="Hide the product price"
+                  label="Show the product price"
                   autoComplete="off"
                   checked={formState.isShow}
                   onChange={(isShow) => setFormState({ ...formState, isShow })}
@@ -440,18 +445,6 @@ export default function CustomPriceForm() {
         </Layout.Section>
         <Layout.Section>
           <PageActions
-            secondaryActions={[
-              {
-                content: "Delete",
-                loading: isDeleting,
-                disabled:
-                  !customPrice.id || !customPrice || isSaving || isDeleting,
-                destructive: true,
-                outline: true,
-                onAction: () =>
-                  submit({ action: "delete" }, { method: "post" }),
-              },
-            ]}
             primaryAction={{
               content: "Save",
               loading: isSaving,

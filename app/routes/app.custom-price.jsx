@@ -1,14 +1,6 @@
 import { json } from "@remix-run/node";
-import {
-  Card,
-  EmptyState,
-  IndexTable,
-  Layout,
-  Page,
-  Thumbnail,
-} from "@shopify/polaris";
+import { Card, EmptyState, IndexTable, Layout, Page } from "@shopify/polaris";
 import { Link, useLoaderData, useNavigate } from "@remix-run/react";
-import { ImageMajor } from "@shopify/polaris-icons";
 
 import { getCustomPrices } from "../models/CustomPrice.server";
 import { authenticate } from "../shopify.server";
@@ -17,7 +9,6 @@ import { truncate } from "../utils";
 export async function loader({ request }) {
   const { admin, session } = await authenticate.admin(request);
   const customPrices = await getCustomPrices(session.shop, admin.graphql);
-
   return json({ customPrices });
 }
 
@@ -42,7 +33,6 @@ const CustomPriceTable = ({ customPrices }) => (
       { title: "Title" },
       { title: "Customer" },
       { title: "Product" },
-      { title: "Image" },
       { title: "Date created" },
       { title: "Expire date" },
     ]}
@@ -55,16 +45,7 @@ const CustomPriceTable = ({ customPrices }) => (
 );
 
 const CustomPriceTableRow = ({ customPrice }) => {
-  const {
-    id,
-    title,
-    customerName,
-    productTitle,
-    productImage,
-    productAlt,
-    createdAt,
-    expiresAt,
-  } = customPrice;
+  const { id, title, customers, products, createdAt, expiresAt } = customPrice;
 
   return (
     <IndexTable.Row
@@ -78,17 +59,10 @@ const CustomPriceTableRow = ({ customPrice }) => {
           {truncate(title)}
         </Link>
       </IndexTable.Cell>
-      <IndexTable.Cell>{customerName}</IndexTable.Cell>
-      <IndexTable.Cell>{productTitle}</IndexTable.Cell>
-      <IndexTable.Cell>
-        <Thumbnail
-          source={productImage || ImageMajor}
-          alt={productAlt || productTitle}
-          size="small"
-        />
-      </IndexTable.Cell>
+      <IndexTable.Cell>{customers.total} Customers</IndexTable.Cell>
+      <IndexTable.Cell>{products.total} Products</IndexTable.Cell>
       <IndexTable.Cell>{createdAt}</IndexTable.Cell>
-      <IndexTable.Cell>{expiresAt}</IndexTable.Cell>
+      <IndexTable.Cell>{expiresAt || "-"}</IndexTable.Cell>
     </IndexTable.Row>
   );
 };

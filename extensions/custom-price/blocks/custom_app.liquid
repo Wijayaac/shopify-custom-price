@@ -1,4 +1,3 @@
-{% comment %} // TODO: create layout for popup  {% endcomment %}
 {{ 't11-popup.css' | asset_url | stylesheet_tag }}
 
 <div class="t11-popup-container">
@@ -14,7 +13,7 @@
         {{
           block.settings.background_image
           | image_url: width: 480
-          | image_tag: widths: '50, 75, 100, 150, 200, 300, 400, 500', height: nil
+          | image_tag: widths: '50, 75, 100, 150, 200, 300, 400, 500', height: null
         }}
       {% else %}
         {{ 'detailed-apparel-1' | placeholder_svg_tag: 'placeholder-svg' }}
@@ -42,6 +41,7 @@
   </div>
 </div>
 <script src="{{ 't11-popup.js' | asset_url }}" defer="defer"></script>
+{% comment %} // TODO: add global js object to let know which product has custom price {% endcomment %}
 {% schema %}
 {
   "name": "App Embed",
