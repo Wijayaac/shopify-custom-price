@@ -10,9 +10,9 @@ export function CustomerSelector({
 }) {
   const fetcher = useFetcher();
   // main customer eligibility
-  const [selectedCustomers, setSelectedCustomers] = useState([
-    currentCustomers,
-  ]);
+  const [selectedCustomers, setSelectedCustomers] = useState(
+    currentCustomers || []
+  );
   // customers selection
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,7 +90,13 @@ export function CustomerSelector({
 
   return (
     <>
-      <Button onClick={fetchCustomers}>Select customer</Button>
+      {selectedCustomers.length == 0 ? (
+        <Button onClick={fetchCustomers}>Select customer</Button>
+      ) : (
+        <Button variant="plain" onClick={fetchCustomers}>
+          Change customer
+        </Button>
+      )}
       <Picker
         searchQueryPlaceholder="Search customers"
         primaryActionLabel="Select"

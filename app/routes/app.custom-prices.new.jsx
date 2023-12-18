@@ -23,13 +23,11 @@ import {
   TextField,
   Thumbnail,
 } from "@shopify/polaris";
+import { ImageMajor } from "@shopify/polaris-icons";
 
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
-import {
-  getCustomPrice,
-  validateCustomPrice,
-} from "../models/CustomPrice.server";
+import { validateCustomPrice } from "../models/CustomPrice.server";
 import { CustomerSelector } from "../components/CustomerPicker";
 import { generateRandomDiscountCode } from "../utils";
 
@@ -48,6 +46,7 @@ export async function loader({ request, params }) {
 					node {
 						id
 						displayName
+						email
 					}
 					cursor
 				}
@@ -73,7 +72,6 @@ export async function loader({ request, params }) {
     customPrice: {
       title: "",
     },
-    customer: {},
     customers,
   });
 }
@@ -246,7 +244,7 @@ export async function action({ request, params }) {
 
 export default function CustomPriceForm() {
   const errors = useActionData()?.errors || {};
-  const { customPrice, customers, customer } = useLoaderData();
+  const { customPrice, customers } = useLoaderData();
   const nav = useNavigate();
   const submit = useSubmit();
   const [formState, setFormState] = useState(customPrice);
@@ -271,12 +269,12 @@ export default function CustomPriceForm() {
       const selectedProducts = products.map((product) => {
         const { images, id, variants, title, handle } = product;
         return {
-          productId: id,
-          productTitle: title,
-          productVariantId: variants[0]?.id,
-          productHandle: handle,
-          productAlt: images[0]?.altText,
-          productImage: images[0]?.originalSrc,
+          id,
+          title,
+          variantId: variants[0]?.id,
+          handle,
+          image: images[0]?.originalSrc,
+          imageAlt: images[0]?.altText,
         };
       });
       setFormState({
@@ -387,7 +385,6 @@ export default function CustomPriceForm() {
                 </Text>
                 <CustomerSelector
                   customers={customers}
-                  currentCustomers={customer}
                   setCustomers={setSelectedCustomers}
                 />
               </BlockStack>
@@ -398,22 +395,33 @@ export default function CustomPriceForm() {
                   <Text as="h2" variant="headingLg">
                     Product
                   </Text>
-                  {formState.productId && (
+                  {formState.selectedProducts && (
                     <Button variant="plain" onClick={selectProduct}>
                       Change product
                     </Button>
                   )}
                 </InlineStack>
-                {formState.productId ? (
-                  <InlineStack blockAlign="center" gap="500">
-                    <Thumbnail
-                      source={formState.productImage || ImageMajor}
-                      alt={formState.productAlt}
-                    />
-                    <Text as="span" variant="headingMd" fontWeight="semibold">
-                      {formState.productTitle}
-                    </Text>
-                  </InlineStack>
+                {formState.selectedProducts ? (
+                  // <InlineStack blockAlign="center" gap="500">
+                  formState.selectedProducts.map(
+                    (product) => (
+                      <InlineStack blockAlign="center" gap="1000">
+                        <Thumbnail
+                          size="small"
+                          source={product.image || ImageMajor}
+                          alt={product.imageAlt}
+                        />
+                        <Text
+                          as="span"
+                          variant="headingMd"
+                          fontWeight="semibold"
+                        >
+                          {product.title}
+                        </Text>
+                      </InlineStack>
+                    )
+                    // </InlineStack>
+                  )
                 ) : (
                   <BlockStack gap="200">
                     <Button onClick={selectProduct} id="select-product">
@@ -427,12 +435,9 @@ export default function CustomPriceForm() {
                     ) : null}
                   </BlockStack>
                 )}
-                <Text as="h2" variant="headingLg">
-                  Hide Product Price
-                </Text>
                 <Checkbox
                   id="isShow"
-                  helpText="Option to hide the product price for all visitors"
+                  helpText="by default the Custom Price will hide the product price. Check this to show the product price"
                   label="Show the product price"
                   autoComplete="off"
                   checked={formState.isShow}
